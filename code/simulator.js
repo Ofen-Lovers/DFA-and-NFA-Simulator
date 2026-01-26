@@ -79,28 +79,28 @@ function addState() {
     color: {
       background:
         isStartState && isAcceptState
-          ? "#800080" // Highlight start and accept states
+          ? "#8E24AA" // Purple for start+accept
           : isStartState
-          ? "#a2d2ff" // Highlight start state
+          ? "#5C6BC0" // Indigo for start
           : isAcceptState
-          ? "#4FFFB0" // Highlight accept states
-          : "#caf0f8", // Regular state
-      border:
-        isStartState && isAcceptState
-          ? "#800080"
-          : isStartState
-          ? "blue"
-          : isAcceptState
-          ? "green"
-          : "white",
+          ? "#43A047" // Green for accept
+          : "#616161", // Grey for regular
+      border: "#ffffff", // White border for better contrast on dark grid
+      highlight: {
+          background: "#FFD54F", // Amber for highlight
+          border: "#ffffff"
+      }
     },
     font: {
-      size: 25,
-      face: "cambria",
+      size: 20,
+      face: "Poppins",
+      color: "#ffffff",
+      align: "center",
+      vadjust: -1 // Slight adjustment to center vertical
     },
     physics: false,
-    size: isAcceptState ? 30 : 20, // Larger size for accept states
-    borderWidth: isAcceptState ? 4 : 2, // Thicker border for accept states
+    size: isAcceptState ? 30 : 25, // Larger size for accept states
+    borderWidth: isAcceptState ? 3 : 2, // Thicker border for accept states
   });
 
   // // Reset the state form to its original state
@@ -195,12 +195,12 @@ function addTransition() {
         to: state,
         label: transitionSymbol,
         arrows: "to",
-        color: { color: "white" },
+        color: { color: "#e0e0e0", highlight: "#FFD54F" },
         smooth: {
           type: isSelfLoop ? "cubicBezier" : "continuous",
           roundness: isSelfLoop ? 0.6 : 0.4,
         },
-        font: { align: "horizontal" },
+        font: { align: "horizontal", face: "Poppins", color: "#ffffff", strokeWidth: 0 },
         physics: false,
         length: transitionLength,
       });
@@ -212,12 +212,12 @@ function addTransition() {
       to: targetState,
       label: transitionSymbol,
       arrows: "to",
-      color: { color: "white" },
+      color: { color: "#e0e0e0", highlight: "#FFD54F" },
       smooth: {
         type: isSelfLoop ? "cubicBezier" : "continuous",
         roundness: isSelfLoop ? 0.6 : 0.4,
       },
-      font: { align: "horizontal" },
+      font: { align: "horizontal", face: "Poppins", color: "#ffffff", strokeWidth: 0 },
       physics: false,
       length: transitionLength,
     });
@@ -244,6 +244,7 @@ function updateStateList() {
     const deleteCell = document.createElement("td");
     const deleteButton = document.createElement("button");
     deleteButton.textContent = "Delete";
+    deleteButton.classList.add("delete-btn"); // Add class for styling if needed
     deleteButton.onclick = () => {
       // Call a function to remove the state from the automaton
       removeState(state);
@@ -283,6 +284,7 @@ function updateTransitionList() {
         const deleteCell = document.createElement("td");
         const deleteButton = document.createElement("button");
         deleteButton.textContent = "Delete";
+        deleteButton.classList.add("delete-btn"); // Add class for styling if needed
         deleteButton.onclick = () => {
           // Call a function to remove the transition from the automaton
           removeTransition(fromState, symbol, toState);
@@ -352,18 +354,15 @@ function resetGraphColors() {
   networkNodes.forEach((node) => {
     const state = node.id;
 
-    let backgroundColor = "#caf0f8"; // Default color
-    let borderColor = "black"; // Default border color
+    let backgroundColor = "#616161"; // Default Grey
+    let borderColor = "#ffffff"; // White border
 
     if (state === automaton.startState && automaton.acceptStates.has(state)) {
-      backgroundColor = "#800080"; // Purple for start and accept states
-      borderColor = "purple";
+      backgroundColor = "#8E24AA"; // Purple
     } else if (state === automaton.startState) {
-      backgroundColor = "#a2d2ff"; // Light blue for start state
-      borderColor = "blue"; // Blue border for start state
+      backgroundColor = "#5C6BC0"; // Indigo
     } else if (automaton.acceptStates.has(state)) {
-      backgroundColor = "#4FFFB0"; // Green for accept states
-      borderColor = "green"; // Green border for accept states
+      backgroundColor = "#43A047"; // Green
     }
 
     // Reset node properties
@@ -372,9 +371,16 @@ function resetGraphColors() {
       color: {
         background: backgroundColor,
         border: borderColor,
+        highlight: {
+            background: "#FFD54F",
+            border: "#ffffff"
+        }
       },
-      borderWidth: automaton.acceptStates.has(state) ? 4 : 2,
-      size: automaton.acceptStates.has(state) ? 30 : 20,
+      font: {
+        color: "#ffffff"
+      },
+      borderWidth: automaton.acceptStates.has(state) ? 3 : 2,
+      size: automaton.acceptStates.has(state) ? 30 : 25,
     });
   });
 
@@ -384,7 +390,8 @@ function resetGraphColors() {
     networkEdges.update({
       id: edge.id,
       color: {
-        color: "#848484", // Gray color for edges
+        color: "#e0e0e0", // Lighter gray for visibility
+        highlight: "#FFD54F"
       },
       width: 1, // Default width
     });
@@ -439,15 +446,17 @@ function simulateWithAnimation(input) {
     ]);
 
     function animateEpsilonTransitions(pathIndex = 0) {
+      const resultElement = document.getElementById("result");
       // Animate ε-transitions for NFAs.
       if (pathIndex >= epsilonPath.length) {
         // Termination condition: all ε-transitions have been animated.
         const isAccepted = closureStates.some((state) =>
           automaton.acceptStates.has(state)
         );
-        document.getElementById("result").textContent = isAccepted
-          ? "Accepted (Empty String)"
-          : "Rejected (Empty String)";
+        resultElement.textContent = isAccepted
+          ? "✅ Accepted (Empty String)"
+          : "❌ Rejected (Empty String)";
+        resultElement.className = isAccepted ? "status-accepted" : "status-rejected";
         highlightState(closureStates, [], "ε"); // Highlight all states in the ε-closure.
         resetGraphColors(); // Reset graph colors after simulation.
         return;
@@ -456,9 +465,8 @@ function simulateWithAnimation(input) {
       const { from, to } = epsilonPath[pathIndex]; // Get the current ε-transition.
 
       // Display the transition and animate the graph.
-      document.getElementById(
-        "result"
-      ).textContent = `ε-transition: ${from} → ${to}`;
+      resultElement.textContent = `ε-transition: ${from} → ${to}`;
+      resultElement.className = "";
       highlightState([from], [to], "ε");
 
       // Delay before animating the next ε-transition.
@@ -476,14 +484,17 @@ function simulateWithAnimation(input) {
 
   // Function to animate a single simulation step.
   function animateStep() {
+    const resultElement = document.getElementById("result");
+    
     if (currentIndex >= input.length) {
       // Termination condition: all input symbols processed.
       const isAccepted = currentStates.some((state) =>
         automaton.acceptStates.has(state)
       );
-      document.getElementById("result").textContent = isAccepted
-        ? "Accepted"
-        : "Rejected";
+      
+      resultElement.textContent = isAccepted ? "✅ Accepted" : "❌ Rejected";
+      resultElement.className = isAccepted ? "status-accepted" : "status-rejected";
+      
       resetGraphColors(); // Reset graph colors after simulation.
       return;
     }
@@ -504,9 +515,8 @@ function simulateWithAnimation(input) {
         const { from, to } = epsilonPath[pathIndex];
 
         // Display the ε-transition and update the graph.
-        document.getElementById(
-          "result"
-        ).textContent = `ε-transition: ${from} → ${to}`;
+        resultElement.textContent = `ε-transition: ${from} → ${to}`;
+        resultElement.className = ""; // Reset class during processing
         highlightState([from], [to], "ε");
 
         // Delay before animating the next ε-transition.
@@ -537,11 +547,10 @@ function simulateWithAnimation(input) {
 
       if (nextStates.length === 0) {
         // No valid transitions for the current symbol.
-        document.getElementById(
-          "result"
-        ).textContent = `Rejected: No transition for ${symbol} from states ${closureStates.join(
+        resultElement.textContent = `❌ Rejected: No transition for ${symbol} from states ${closureStates.join(
           ", "
         )}`;
+        resultElement.className = "status-rejected";
         resetGraphColors(); // Reset graph colors on rejection.
         return;
       }
@@ -553,11 +562,10 @@ function simulateWithAnimation(input) {
       } = getEpsilonClosure(nextStates);
 
       // Display the transition and update the graph.
-      document.getElementById(
-        "result"
-      ).textContent = `Processing Symbol: ${symbol} (${closureStates.join(
+      resultElement.textContent = `Processing Symbol: ${symbol} (${closureStates.join(
         ", "
       )} → ${nextClosureStates.join(", ")})`;
+      resultElement.className = ""; // Reset class
       highlightState(
         closureStates,
         nextClosureStates,
@@ -590,42 +598,37 @@ function highlightState(
     const state = node.id;
 
     // Determine the node's color based on its role in the simulation.
-    let backgroundColor = "#caf0f8"; // Default state color (unvisited).
+    let backgroundColor = "#616161"; // Default
     if (currentStates.includes(state)) {
-      backgroundColor = "#ffe399"; // Yellow for current states.
+      backgroundColor = "#FFD54F"; // Amber for current
     } else if (nextStates.includes(state)) {
-      backgroundColor = "#ff9b0b"; // Orange for next states.
+      backgroundColor = "#4DB6AC"; // Teal for next
     } else if (
       state === automaton.startState &&
       automaton.acceptStates.has(state)
     ) {
-      backgroundColor = "#800080"; // Light blue for the start state.
+      backgroundColor = "#8E24AA"; // Purple
     } else if (state === automaton.startState) {
-      backgroundColor = "#a2d2ff"; // Light blue for the start state.
-    }
-
-    let borderColor = "white"; // Default border color.
-    if (state === automaton.startState && automaton.acceptStates.has(state)) {
-      borderColor = "purple"; // Purple for the start and accept states.
-    } else if (state === automaton.startState) {
-      borderColor = "blue"; // Blue for the start state.
+      backgroundColor = "#5C6BC0"; // Indigo
     } else if (automaton.acceptStates.has(state)) {
-      borderColor = "green"; // Green for accept states.
+      backgroundColor = "#43A047"; // Green
     }
 
+    let borderColor = "#ffffff"; // Default border
+    
     networkNodes.update({
       id: state,
       color: {
         background: backgroundColor,
         border: borderColor,
       },
-      borderWidth: automaton.acceptStates.has(state) ? 4 : 2,
+      borderWidth: automaton.acceptStates.has(state) ? 3 : 2,
       size:
         currentStates.includes(state) ||
         nextStates.includes(state) ||
         automaton.acceptStates.has(state)
           ? 30
-          : 20,
+          : 25,
     });
   });
 
@@ -643,7 +646,7 @@ function highlightState(
 
     networkEdges.update({
       id: edge.id,
-      color: { color: isActiveTransition ? "red" : "#848484" },
+      color: { color: isActiveTransition ? "#FFD54F" : "#e0e0e0" }, // Highlight color vs Default
       width: isActiveTransition ? 3 : 1,
     });
   });
